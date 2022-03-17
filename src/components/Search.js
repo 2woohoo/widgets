@@ -1,7 +1,58 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const Search = () => {
   const [keyword, setKeyword] = useState('')
+  const [results, setResults] = useState([])
+
+  useEffect(() => {
+    const search = async () => {
+      const { data } = await axios.get('http://en.wikipedia.org/w/api.php', {
+        params: {
+          action: 'query',
+          list: 'search',
+          origin: '*',
+          format: 'json',
+          srsearch: keyword,
+        },
+      })
+
+      setResults(data.query.search)
+    }
+
+    if (keyword && !results.length) {
+      search()
+    } else {
+      const timeoutId = setTimeout(() => {
+        if (keyword) {
+          search()
+        }
+      }, 800)
+
+      return () => {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [keyword])
+
+  const renderedResults = results.map((result) => {
+    return (
+      <div className="item" key={result.pageid}>
+        <div className="right floated content">
+          <a
+            className="ui button"
+            href={`https://en.wikipedia.org?curid=${result.pageid}`}
+          >
+            go
+          </a>
+        </div>
+        <div className="content">
+          <div className="header">{result.title}</div>
+          <span dangerouslySetInnerHTML={{ __html: result.snippet }}></span>
+        </div>
+      </div>
+    )
+  })
 
   return (
     <div>
@@ -19,7 +70,7 @@ const Search = () => {
         </div>
       </div>
 
-      <div>Display</div>
+      <div className="ui celled list">{renderedResults}</div>
     </div>
   )
 }
